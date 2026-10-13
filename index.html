@@ -18,8 +18,11 @@
     </header>
 
     <div class="stats">
-      <span id="status">Fill the grid</span>
-      <span id="timer">00:00</span>
+      <span id="status">Tap to play</span>
+      <div class="stats-right">
+        <span id="timer">00:00</span>
+        <button id="pausePlay" class="icon-btn" aria-label="Play" title="Play">&#9654;</button>
+      </div>
     </div>
 
     <div class="play-area">
@@ -46,6 +49,14 @@
           <button id="check" class="action-btn">Check</button>
         </div>
       </aside>
+    </div>
+  </div>
+
+  <div class="modal" id="winModal" hidden>
+    <div class="modal-card">
+      <h2>Congratulations!</h2>
+      <p id="winMsg">You solved the puzzle.</p>
+      <button id="modalNewGame" class="action-btn primary">New Game</button>
     </div>
   </div>
 

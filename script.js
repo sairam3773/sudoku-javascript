@@ -3,6 +3,10 @@ const statusEl = document.getElementById("status");
 const timerEl = document.getElementById("timer");
 const numBtns = document.querySelectorAll(".num-btn");
 const levelBtns = document.querySelectorAll(".level-btn");
+const pausePlayBtn = document.getElementById("pausePlay");
+const boardWrap = document.querySelector(".board-wrap");
+const winModal = document.getElementById("winModal");
+const winMsg = document.getElementById("winMsg");
 
 const LEVELS = {
   easy: 45,
@@ -18,6 +22,8 @@ let activeNum = null;
 let timerId = null;
 let seconds = 0;
 let currentLevel = "easy";
+let paused = true;
+let lastTap = { row: -1, col: -1, time: 0 };
 
 function makeEmpty() {
   return Array.from({ length: 9 }, () => Array(9).fill(0));
@@ -200,6 +206,27 @@ function isValidPlacement(row, col) {
 }
 
 function onCellClick(row, col) {
+  if (paused) return;
+
+  const now = Date.now();
+  const isDouble =
+    lastTap.row === row &&
+    lastTap.col === col &&
+    now - lastTap.time < 320;
+  lastTap = { row, col, time: now };
+
+  if (isDouble) {
+    if (puzzle[row][col] === 0 && board[row][col] !== 0) {
+      board[row][col] = 0;
+      selected = { row, col };
+      activeNum = null;
+      setActiveNumBtn(null);
+      statusEl.textContent = "Cleared";
+      render();
+      return;
+    }
+  }
+
   if (selected && selected.row === row && selected.col === col) {
     selected = null;
   } else {
@@ -239,6 +266,7 @@ function setActiveNumBtn(num) {
 }
 
 function enterNumber(num) {
+  if (paused) return;
   if (!selected) {
     statusEl.textContent = "Select a cell first";
     return;
@@ -262,9 +290,12 @@ function win() {
       ? "var(--given)"
       : "var(--user)";
   });
+  winMsg.textContent = `You solved the ${currentLevel} puzzle in ${timerEl.textContent}.`;
+  winModal.hidden = false;
 }
 
 function erase() {
+  if (paused) return;
   if (!selected) return;
   if (puzzle[selected.row][selected.col] !== 0) return;
   board[selected.row][selected.col] = 0;
@@ -285,10 +316,14 @@ function check() {
   statusEl.textContent = wrong === 0 ? "All good so far!" : `${wrong} mistake(s)`;
 }
 
-function startTimer() {
+function resetTimer() {
   stopTimer();
   seconds = 0;
   timerEl.textContent = "00:00";
+}
+
+function resumeTimer() {
+  if (timerId) return;
   timerId = setInterval(() => {
     seconds++;
     const m = String(Math.floor(seconds / 60)).padStart(2, "0");
@@ -302,21 +337,59 @@ function stopTimer() {
   timerId = null;
 }
 
+function updatePauseBtn() {
+  if (paused) {
+    pausePlayBtn.innerHTML = "&#9654;";
+    pausePlayBtn.setAttribute("aria-label", "Play");
+    pausePlayBtn.title = "Play";
+  } else {
+    pausePlayBtn.innerHTML = "&#10074;&#10074;";
+    pausePlayBtn.setAttribute("aria-label", "Pause");
+    pausePlayBtn.title = "Pause";
+  }
+  boardWrap.classList.toggle("paused", paused);
+}
+
+function playGame() {
+  if (!paused) return;
+  paused = false;
+  updatePauseBtn();
+  resumeTimer();
+  statusEl.textContent = "Fill the grid";
+}
+
+function pauseGame() {
+  if (paused) return;
+  paused = true;
+  updatePauseBtn();
+  stopTimer();
+  statusEl.textContent = "Paused";
+}
+
+function togglePause() {
+  if (paused) playGame();
+  else pauseGame();
+}
+
 function newGame() {
+  winModal.hidden = true;
   statusEl.textContent = "Generating...";
   setTimeout(() => {
     generate();
     selected = null;
     activeNum = null;
+    lastTap = { row: -1, col: -1, time: 0 };
     setActiveNumBtn(null);
+    resetTimer();
     render();
-    startTimer();
-    statusEl.textContent = "Fill the grid";
+    if (!paused) resumeTimer();
+    statusEl.textContent = paused ? "Tap to play" : "Fill the grid";
   }, 20);
 }
 
 numBtns.forEach((btn) => {
   btn.addEventListener("click", () => {
+    if (paused) return;
     const num = Number(btn.dataset.num);
     if (activeNum === num) {
       activeNum = null;
@@ -344,8 +417,28 @@ levelBtns.forEach((btn) => {
 document.getElementById("newGame").addEventListener("click", newGame);
 document.getElementById("erase").addEventListener("click", erase);
 document.getElementById("check").addEventListener("click", check);
+pausePlayBtn.addEventListener("click", togglePause);
+
+boardWrap.addEventListener("click", () => {
+  if (paused) playGame();
+});
+
+document.getElementById("modalNewGame").addEventListener("click", () => {
+  winModal.hidden = true;
+  newGame();
+});
+
+winModal.addEventListener("click", (e) => {
+  if (e.target === winModal) winModal.hidden = true;
+});
 
 document.addEventListener("keydown", (e) => {
+  if (e.code === "Space") {
+    e.preventDefault();
+    togglePause();
+    return;
+  }
+  if (paused) return;
   if (e.key >= "1" && e.key <= "9") {
     const num = Number(e.key);
     activeNum = num;
@@ -365,4 +458,5 @@ document.addEventListener("keydown", (e) => {
   }
 });
 
+updatePauseBtn();
 newGame();
