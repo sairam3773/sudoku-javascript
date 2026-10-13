@@ -176,17 +176,20 @@ h1 {
 
 .numpad {
   display: grid;
-  grid-template-columns: repeat(9, 1fr);
-  gap: 8px;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  width: 100%;
+  max-width: 300px;
+  margin: 0 auto;
 }
 
 .num-btn {
   background: transparent;
   color: var(--text);
   border: 1px solid var(--line);
-  border-radius: 8px;
-  padding: 12px 0;
-  font-size: 1.15rem;
+  border-radius: 10px;
+  padding: 18px 0;
+  font-size: 1.5rem;
   cursor: pointer;
   transition: all 0.15s ease;
 }
@@ -247,8 +250,8 @@ h1 {
   }
 
   .num-btn {
-    font-size: 1rem;
-    padding: 10px 0;
+    font-size: 1.3rem;
+    padding: 14px 0;
   }
 
   .levels {
